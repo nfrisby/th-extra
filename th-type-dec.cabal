@@ -1,0 +1,16 @@
+name:          th-type-dec
+version:       1.0
+cabal-version: >= 1.6
+license:       BSD3
+license-file:  LICENSE
+author:        Nicolas Frisby
+maintainer:    nicolas.frisby@gmail.com
+category:      TemplateHaskell
+synopsis:      a version of reify specific to type declarations
+description:      a version of reify specific to type declarations
+build-type:    Simple
+
+Library
+  build-depends: base < 6, template-haskell
+
+  exposed-modules: Language.Haskell.TH.TypeDec
