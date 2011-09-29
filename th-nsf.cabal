@@ -1,4 +1,4 @@
-name:          th-type-dec
+name:          th-nsf
 version:       1.0
 cabal-version: >= 1.6
 license:       BSD3
@@ -11,6 +11,9 @@ description:      a version of reify specific to type declarations
 build-type:    Simple
 
 Library
-  build-depends: base < 6, template-haskell
+  build-depends: base < 6, template-haskell, containers
 
-  exposed-modules: Language.Haskell.TH.TypeDec
+  build-depends: generic-deriving, th-gd
+
+  exposed-modules: Language.Haskell.TH.TypeDec, Language.Haskell.TH.Named,
+                   Language.Haskell.TH.Substitution
