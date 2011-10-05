@@ -29,7 +29,6 @@ import Language.Haskell.TH.Named
 
 import Language.Haskell.TH.Generics
 import Language.Haskell.TH
-import qualified Language.Haskell.TH
 
 import Generics.Deriving.TH.Case
 
@@ -92,13 +91,13 @@ gbinders = binders1 . from
 
 --------------------
 instance Free Type where
-  free = $(let q = varE 'free in gd_case [
-    [| \(ForallT tvbs c ty) ->
-       filter (`notElem` mapMaybe (either (Just . Left) (fmap Right)) ($(varE 'binders) tvbs)) $
-                $q c ++ $q ty |],
-    [| \(VarT n) -> [Left n] |],
-    [| \(ConT n) -> [Left n] |]
-               ] (const [| free1 |]))
+  free ty = $(let q = varE 'free in conCase [| case ty of
+    ForallT tvbs c ty ->
+      filter (`notElem` mapMaybe (either (Just . Left) (fmap Right)) ($(varE 'binders) tvbs)) $
+             $q c ++ $q ty
+    VarT n -> [Left n]
+    ConT n -> [Left n]
+           |] (const [| free1 |]))
 
 close_ :: Binders a => a -> [Either Name Name] -> [Either Name Name]
 close_ a b = filter (either (p . Left) (p . Right . Just)) b where
@@ -159,28 +158,29 @@ instance Free Dec where
 
 
 instance Free Pat where
-  free = $(let qc = varE 'close; qcs = varE 'closes; q = varE 'free in gd_case [
-    [| \(LitP _) -> [] |],
-    [| \(VarP _) -> [] |],
-    [| \(TupP ps) -> $qcs ps |],
-    [| \(ConP n ps) -> Right n : $qcs ps |],
-    [| \(InfixP p1 n p2) -> Right n : $qc p1 p2 |],
-    [| \(AsP n p) -> $q p |],
-    [| \(RecP n fes) -> Right n : map (Right . fst) fes ++ $qcs (map snd fes) |],
-    [| \(ListP ps) -> $qcs ps |]
-           ] (const [| free1 |]))
+  free x = $(let qc = varE 'close; qcs = varE 'closes; q = varE 'free in
+             conCase [| case x of
+    LitP _ -> []
+    VarP _ -> []
+    TupP ps -> $qcs ps
+    ConP n ps -> Right n : $qcs ps
+    InfixP p1 n p2 -> Right n : $qc p1 p2
+    AsP n p -> $q p
+    RecP n fes -> Right n : map (Right . fst) fes ++ $qcs (map snd fes)
+    ListP ps -> $qcs ps
+             |] (const [| free1 |]))
   
 
 instance Free Exp where
-  free = $(let qc = varE 'close; q = varE 'free in gd_case [
-    [| \(VarE n) -> [Right n] |],
-    [| \(ConE n) -> [Right n] |],
-    [| \(LitE _) -> [] |],
-    [| \(LamE ps e) -> $qc (Cascade ps) e |],
-    [| \(LetE ds e) -> $qc ds e |],
-    [| \(RecConE n fes) -> Right n : map (Right . fst) fes ++ $q (map snd fes) |],
-    [| \(RecUpdE e fes) -> $q e ++ map (Right . fst) fes ++ $q (map snd fes) |]
-           ] (const [| free1 |]))
+  free x = $(let qc = varE 'close; q = varE 'free in conCase [| case x of
+    VarE n -> [Right n]
+    ConE n -> [Right n]
+    LitE _ -> []
+    LamE ps e -> $qc (Cascade ps) e
+    LetE ds e -> $qc ds e
+    RecConE n fes -> Right n : map (Right . fst) fes ++ $q (map snd fes)
+    RecUpdE e fes -> $q e ++ map (Right . fst) fes ++ $q (map snd fes)
+                  |] (const [| free1 |]))
 
 instance Free Stmt where
   free (BindS p e) = close p e
@@ -275,17 +275,17 @@ instance (Binders1 l, Binders1 r) => Binders1 (l :*: r) where
 
 
 instance Binders Pat where
-  binders = $(let q = varE 'binders in gd_case [
-    [| \(LitP _) -> [] |],
-    [| \(VarP n) -> [Right (Just n)] |],
-    [| \(ConP _ pats) -> $q pats |],
-    [| \(InfixP p1 _ p2) -> $q p1 ++ $q p2 |],
-    [| \(AsP n pat) -> Right (Just n) : $q pat |],
-    [| \WildP -> [Right Nothing] |],
-    [| \(RecP _ fps) -> $q (map snd fps) |],
-    [| \(SigP pat ty) -> $q pat ++ $q (BTV ty) |],
-    [| \(ViewP _ pat) -> $q pat |]
-                      ] (const [| binders1 |]))
+  binders x = $(let q = varE 'binders in conCase [| case x of
+    LitP _ -> []
+    VarP n -> [Right (Just n)]
+    ConP _ pats -> $q pats
+    InfixP p1 _ p2 -> $q p1 ++ $q p2
+    AsP n pat -> Right (Just n) : $q pat
+    WildP -> [Right Nothing]
+    RecP _ fps -> $q (map snd fps)
+    SigP pat ty -> $q pat ++ $q (BTV ty)
+    ViewP _ pat -> $q pat
+                |] (const [| binders1 |]))
 
 instance Binders Dec where
   binders (FunD n _) = [Right (Just n)]
