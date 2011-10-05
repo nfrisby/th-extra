@@ -1,4 +1,4 @@
-name:          th-nsf
+name:          th-extra
 version:       1.0
 cabal-version: >= 1.6
 license:       BSD3
@@ -6,8 +6,8 @@ license-file:  LICENSE
 author:        Nicolas Frisby
 maintainer:    nicolas.frisby@gmail.com
 category:      TemplateHaskell
-synopsis:      a version of reify specific to type declarations
-description:      a version of reify specific to type declarations
+synopsis:      Extra functionality for the template-haskell library
+description:   Extra functionality for the template-haskell library
 build-type:    Simple
 
 Library
